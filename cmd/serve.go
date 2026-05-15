@@ -12,8 +12,9 @@ func Serve() {
 
 	routes(mux)
 
+	handler := middlewares.Logger(middlewares.EnableCORS(mux))
 	fmt.Println("Server is running on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", middlewares.EnableCORS(mux)); err != nil {
+	if err := http.ListenAndServe(":8080", handler); err != nil {
 		fmt.Println(err)
 	}
 }
