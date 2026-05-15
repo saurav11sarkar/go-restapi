@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Go User API Tester</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0f;
+            --bg2: #111118;
+            --bg3: #1a1a24;
+            --bg4: #22222f;
+            --border: rgba(255,255,255,0.07);
+            --border2: rgba(255,255,255,0.13);
+            --text: #f0f0f8;
+            --text2: #8888aa;
+            --text3: #55556a;
+            --accent: #7c6af7;
+            --accent2: #a594ff;
+            --get: #3ddc97;
+            --post: #f7c948;
+            --put: #f97316;
+            --delete: #ef4444;
+            --success: #3ddc97;
+            --error: #ef4444;
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Syne', sans-serif;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--sans);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background grid */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                    linear-gradient(rgba(124,106,247,0.03) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(124,106,247,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .glow-orb {
+            position: fixed;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(124,106,247,0.08) 0%, transparent 70%);
+            top: -200px;
+            right: -200px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Header */
+        header {
+            padding: 3rem 0 2rem;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 2.5rem;
+        }
+
+        .header-inner {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .logo-area h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #f0f0f8 0%, var(--accent2) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .logo-area p {
+            font-size: 0.8rem;
+            color: var(--text3);
+            font-family: var(--mono);
+            margin-top: 4px;
+            letter-spacing: 0.05em;
+        }
+
+        .server-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 100px;
+            padding: 6px 14px;
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--text2);
+        }
+
+        .dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        /* Layout */
+        .layout {
+            display: grid;
+            grid-template-columns: 240px 1fr;
+            gap: 1.5rem;
+            align-items: start;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1rem;
+            position: sticky;
+            top: 2rem;
+        }
+
+        .sidebar-label {
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            color: var(--text3);
+            text-transform: uppercase;
+            padding: 0 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .route-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.15s;
+            margin-bottom: 3px;
+        }
+
+        .route-btn:hover { background: var(--bg4); }
+        .route-btn.active { background: var(--bg4); }
+        .route-btn.active .route-path { color: var(--text); }
+
+        .method-tag {
+            font-family: var(--mono);
+            font-size: 0.62rem;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 5px;
+            min-width: 52px;
+            text-align: center;
+            letter-spacing: 0.05em;
+        }
+
+        .tag-GET { background: rgba(61,220,151,0.12); color: var(--get); }
+        .tag-POST { background: rgba(247,201,72,0.12); color: var(--post); }
+        .tag-PUT { background: rgba(249,115,22,0.12); color: var(--put); }
+        .tag-DELETE { background: rgba(239,68,68,0.12); color: var(--delete); }
+
+        .route-path {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            color: var(--text2);
+        }
+
+        .sidebar-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 0.75rem 0;
+        }
+
+        /* Main panel */
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            animation: fadeUp 0.3s ease both;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-header {
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text2);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .card-body { padding: 1.25rem; }
+
+        /* URL bar */
+        .url-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .method-pill {
+            font-family: var(--mono);
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border2);
+            background: var(--bg3);
+            min-width: 72px;
+            text-align: center;
+        }
+
+        .url-input {
+            flex: 1;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text2);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        .url-input:focus { border-color: var(--border2); color: var(--text); }
+        .url-input::placeholder { color: var(--text3); }
+
+        .send-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 1px solid var(--accent);
+            background: rgba(124,106,247,0.12);
+            color: var(--accent2);
+            font-family: var(--sans);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .send-btn:hover {
+            background: rgba(124,106,247,0.22);
+            box-shadow: 0 0 20px rgba(124,106,247,0.2);
+        }
+
+        .send-btn:active { transform: scale(0.97); }
+
+        /* Fields */
+        .field-label {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text3);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .field-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--bg3);
+            color: var(--text);
+            font-family: var(--mono);
+            font-size: 0.8rem;
+            outline: none;
+            margin-bottom: 1rem;
+            transition: border-color 0.15s;
+        }
+
+        .field-input:focus { border-color: var(--border2); }
+        .field-input::placeholder { color: var(--text3); }
+
+        textarea.field-input {
+            min-height: 100px;
+            resize: vertical;
+            line-height: 1.6;
+        }
+
+        /* Response */
+        .res-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .status-chip {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 100px;
+            display: none;
+        }
+
+        .chip-ok { background: rgba(61,220,151,0.12); color: var(--success); border: 1px solid rgba(61,220,151,0.2); }
+        .chip-err { background: rgba(239,68,68,0.12); color: var(--error); border: 1px solid rgba(239,68,68,0.2); }
+
+        .res-time {
+            font-family: var(--mono);
+            font-size: 0.7rem;
+            color: var(--text3);
+            display: none;
+        }
+
+        .res-box {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem;
+            font-family: var(--mono);
+            font-size: 0.78rem;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 80px;
+            color: var(--text2);
+            position: relative;
+            transition: border-color 0.2s;
+        }
+
+        .res-box.has-data { color: var(--text); }
+        .res-box.ok-border { border-color: rgba(61,220,151,0.15); }
+        .res-box.err-border { border-color: rgba(239,68,68,0.15); }
+
+        .placeholder-text {
+            color: var(--text3);
+            font-style: italic;
+        }
+
+        /* JSON colors */
+        .json-key { color: var(--accent2); }
+        .json-str { color: var(--get); }
+        .json-num { color: var(--post); }
+        .json-bool { color: var(--put); }
+        .json-null { color: var(--text3); }
+
+        /* Panels */
+        .endpoint-panel { display: none; }
+        .endpoint-panel.active { display: flex; flex-direction: column; gap: 1.25rem; }
+
+        /* Copy btn */
+        .copy-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--bg2);
+            color: var(--text3);
+            font-family: var(--mono);
+            font-size: 0.65rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: none;
+        }
+
+        .copy-btn:hover { color: var(--text2); border-color: var(--border2); }
+
+        /* Loading */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid var(--border2);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        /* Responsive */
+        @media (max-width: 700px) {
+            .layout { grid-template-columns: 1fr; }
+            .sidebar { position: static; }
+            .logo-area h1 { font-size: 1.6rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="glow-orb"></div>
+
+<div class="container">
+    <header>
+        <div class="header-inner">
+            <div class="logo-area">
+                <h1>API Tester</h1>
+                <p>// Go User CRUD API — localhost:8080</p>
+            </div>
+            <div class="server-badge">
+                <span class="dot"></span>
+                localhost:8080
+            </div>
+        </div>
+    </header>
+
+    <div class="layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-label">Endpoints</div>
+
+            <button class="route-btn active" onclick="switchTab('home', this)">
+                <span class="method-tag tag-GET">GET</span>
+                <span class="route-path">/</span>
+            </button>
+
+            <div class="sidebar-divider"></div>
+            <div class="sidebar-label" style="margin-top:0.5rem">Users</div>
+
+            <button class="route-btn" onclick="switchTab('getAll', this)">
+                <span class="method-tag tag-GET">GET</span>
+                <span class="route-path">/user</span>
+            </button>
+
+            <button class="route-btn" onclick="switchTab('getById', this)">
+                <span class="method-tag tag-GET">GET</span>
+                <span class="route-path">/user/{id}</span>
+            </button>
+
+            <button class="route-btn" onclick="switchTab('post', this)">
+                <span class="method-tag tag-POST">POST</span>
+                <span class="route-path">/user</span>
+            </button>
+
+            <button class="route-btn" onclick="switchTab('put', this)">
+                <span class="method-tag tag-PUT">PUT</span>
+                <span class="route-path">/user/{id}</span>
+            </button>
+
+            <button class="route-btn" onclick="switchTab('delete', this)">
+                <span class="method-tag tag-DELETE">DELETE</span>
+                <span class="route-path">/user/{id}</span>
+            </button>
+        </aside>
+
+        <!-- Main content -->
+        <main class="main-panel">
+
+            <!-- HOME -->
+            <div id="panel-home" class="endpoint-panel active">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">Home</span>
+                        <span class="method-tag tag-GET" style="font-size:0.7rem">GET /</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--get)">GET</span>
+                            <input class="url-input" value="http://localhost:8080/" readonly />
+                            <button class="send-btn" onclick="doRequest('home','GET','http://localhost:8080/')">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-home"></span></div>
+                    <div class="card-body">
+                        <div class="res-header">
+                            <span class="status-chip" id="chip-home"></span>
+                        </div>
+                        <div class="res-box" id="res-home">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-home')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GET ALL -->
+            <div id="panel-getAll" class="endpoint-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">সব user দেখাও</span>
+                        <span class="method-tag tag-GET" style="font-size:0.7rem">GET /user</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--get)">GET</span>
+                            <input class="url-input" value="http://localhost:8080/user" readonly />
+                            <button class="send-btn" onclick="doRequest('getAll','GET','http://localhost:8080/user')">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-getAll"></span></div>
+                    <div class="card-body">
+                        <div class="res-header"><span class="status-chip" id="chip-getAll"></span></div>
+                        <div class="res-box" id="res-getAll">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-getAll')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- GET BY ID -->
+            <div id="panel-getById" class="endpoint-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">ID দিয়ে user খোঁজো</span>
+                        <span class="method-tag tag-GET" style="font-size:0.7rem">GET /user/{id}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-label">User ID</div>
+                        <input class="field-input" id="id-getById" placeholder="যেমন: 1" style="max-width:200px" />
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--get)">GET</span>
+                            <input class="url-input" id="url-getById" value="http://localhost:8080/user/{id}" readonly />
+                            <button class="send-btn" onclick="sendById('getById')">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-getById"></span></div>
+                    <div class="card-body">
+                        <div class="res-header"><span class="status-chip" id="chip-getById"></span></div>
+                        <div class="res-box" id="res-getById">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-getById')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- POST -->
+            <div id="panel-post" class="endpoint-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">নতুন user তৈরি করো</span>
+                        <span class="method-tag tag-POST" style="font-size:0.7rem">POST /user</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-label">Request Body (JSON)</div>
+                        <textarea class="field-input" id="body-post">{"name": "Rahim", "age": 25}</textarea>
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--post)">POST</span>
+                            <input class="url-input" value="http://localhost:8080/user" readonly />
+                            <button class="send-btn" onclick="doRequest('post','POST','http://localhost:8080/user', document.getElementById('body-post').value)">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-post"></span></div>
+                    <div class="card-body">
+                        <div class="res-header"><span class="status-chip" id="chip-post"></span></div>
+                        <div class="res-box" id="res-post">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-post')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- PUT -->
+            <div id="panel-put" class="endpoint-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">User আপডেট করো</span>
+                        <span class="method-tag tag-PUT" style="font-size:0.7rem">PUT /user/{id}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-label">User ID</div>
+                        <input class="field-input" id="id-put" placeholder="যেমন: 1" style="max-width:200px" />
+                        <div class="field-label">Request Body (JSON)</div>
+                        <textarea class="field-input" id="body-put">{"name": "Karim", "age": 30}</textarea>
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--put)">PUT</span>
+                            <input class="url-input" id="url-put" value="http://localhost:8080/user/{id}" readonly />
+                            <button class="send-btn" onclick="sendById('put')">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-put"></span></div>
+                    <div class="card-body">
+                        <div class="res-header"><span class="status-chip" id="chip-put"></span></div>
+                        <div class="res-box" id="res-put">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-put')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DELETE -->
+            <div id="panel-delete" class="endpoint-panel">
+                <div class="card">
+                    <div class="card-header">
+                        <span class="card-title">User ডিলিট করো</span>
+                        <span class="method-tag tag-DELETE" style="font-size:0.7rem">DELETE /user/{id}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-label">User ID</div>
+                        <input class="field-input" id="id-delete" placeholder="যেমন: 1" style="max-width:200px" />
+                        <div class="url-row">
+                            <span class="method-pill" style="color:var(--delete)">DELETE</span>
+                            <input class="url-input" id="url-delete" value="http://localhost:8080/user/{id}" readonly />
+                            <button class="send-btn" onclick="sendById('delete')">Send →</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><span class="card-title">Response</span><span class="res-time" id="time-delete"></span></div>
+                    <div class="card-body">
+                        <div class="res-header"><span class="status-chip" id="chip-delete"></span></div>
+                        <div class="res-box" id="res-delete">
+                            <span class="placeholder-text">Send করলে এখানে response আসবে...</span>
+                            <button class="copy-btn" onclick="copyRes('res-delete')">copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</div>
+
+<script>
+    function switchTab(name, btn) {
+        document.querySelectorAll('.endpoint-panel').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.route-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById('panel-' + name).classList.add('active');
+        btn.classList.add('active');
+    }
+
+    function colorJson(json) {
+        return json
+            .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) return `<span class="json-key">${match}</span>`;
+                    return `<span class="json-str">${match}</span>`;
+                }
+                if (/true|false/.test(match)) return `<span class="json-bool">${match}</span>`;
+                if (/null/.test(match)) return `<span class="json-null">${match}</span>`;
+                return `<span class="json-num">${match}</span>`;
+            });
+    }
+
+    async function doRequest(tab, method, url, body) {
+        const box = document.getElementById('res-' + tab);
+        const chip = document.getElementById('chip-' + tab);
+        const timeEl = document.getElementById('time-' + tab);
+        const copyBtn = box.querySelector('.copy-btn');
+
+        box.innerHTML = `<span class="spinner"></span><span style="color:var(--text3);font-style:italic">অপেক্ষা করো...</span>`;
+        box.className = 'res-box';
+        chip.style.display = 'none';
+        timeEl.style.display = 'none';
+
+        const start = Date.now();
+        try {
+            const opts = { method, headers: { 'Content-Type': 'application/json' } };
+            if (body) opts.body = body;
+            const r = await fetch(url, opts);
+            const elapsed = Date.now() - start;
+            const json = await r.json();
+            const pretty = JSON.stringify(json, null, 2);
+
+            chip.textContent = r.status + ' ' + r.statusText;
+            chip.className = 'status-chip ' + (r.ok ? 'chip-ok' : 'chip-err');
+            chip.style.display = 'inline-block';
+
+            timeEl.textContent = elapsed + 'ms';
+            timeEl.style.display = 'inline';
+
+            box.classList.add('has-data');
+            box.classList.add(r.ok ? 'ok-border' : 'err-border');
+            box.innerHTML = colorJson(pretty);
+            box.appendChild(copyBtn);
+            copyBtn.style.display = 'block';
+            copyBtn.dataset.text = pretty;
+
+        } catch (e) {
+            chip.textContent = 'Error';
+            chip.className = 'status-chip chip-err';
+            chip.style.display = 'inline-block';
+            box.classList.add('err-border');
+            box.innerHTML = `<span style="color:var(--error)">Connection refused</span>\n\nServer চালু আছে তো?\n→ go run main.go`;
+            box.appendChild(copyBtn);
+        }
+    }
+
+    function sendById(tab) {
+        const idEl = document.getElementById('id-' + tab);
+        const id = idEl ? idEl.value.trim() : '';
+        if (!id) { idEl.style.borderColor = 'var(--error)'; setTimeout(()=>idEl.style.borderColor='',1200); return; }
+        const methods = { getById:'GET', put:'PUT', delete:'DELETE' };
+        const paths = { getById: `/user/${id}`, put: `/user/${id}`, delete: `/user/${id}` };
+        const urlEl = document.getElementById('url-' + tab);
+        if (urlEl) urlEl.value = 'http://localhost:8080' + paths[tab];
+        const body = tab === 'put' ? document.getElementById('body-put').value : null;
+        doRequest(tab, methods[tab], 'http://localhost:8080' + paths[tab], body);
+    }
+
+    function copyRes(id) {
+        const box = document.getElementById(id);
+        const text = box.dataset?.text || box.innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const btn = box.querySelector('.copy-btn');
+            btn.textContent = 'copied!';
+            setTimeout(() => btn.textContent = 'copy', 1500);
+        });
+    }
+
+    // Live URL preview for id fields
+    ['getById','put','delete'].forEach(tab => {
+        const idEl = document.getElementById('id-' + tab);
+        const urlEl = document.getElementById('url-' + tab);
+        if (idEl && urlEl) {
+            idEl.addEventListener('input', () => {
+                const v = idEl.value.trim() || '{id}';
+                urlEl.value = `http://localhost:8080/user/${v}`;
+            });
+        }
+    });
+</script>
+</body>
+</html>
