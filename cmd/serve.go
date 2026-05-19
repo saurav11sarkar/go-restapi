@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/saurav11sarkar/resapi/config"
 	"github.com/saurav11sarkar/resapi/middlewares"
 )
 
@@ -18,12 +19,13 @@ func Serve() {
 		With(
 			middlewares.Logger,
 			middlewares.EnableCORS,
-			middlewares.TestMiddleware,
 		).
 		Apply(mux)
 
-	fmt.Println("Server is running on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", handler); err != nil {
+	cfg := config.LoadConfig()
+
+	fmt.Println("Server is running on http://localhost:" + cfg.HttpPort)
+	if err := http.ListenAndServe(":"+cfg.HttpPort, handler); err != nil {
 		fmt.Println(err)
 	}
 }
