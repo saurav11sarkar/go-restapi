@@ -145,3 +145,33 @@ func DeleteUserById(w http.ResponseWriter, r *http.Request) {
 		Data:    nil,
 	})
 }
+
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+	var body model.Login
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		utils.SendJson(w, http.StatusBadRequest, model.Response{
+			Success: false,
+			Message: "Invalid request body",
+			Data:    nil,
+		})
+		return
+	}
+
+	for _, user := range users {
+		if user.Email == body.Email && user.Password == body.Password {
+			utils.SendJson(w, http.StatusOK, model.Response{
+				Success: true,
+				Message: "User login success",
+				Data:    user,
+			})
+			return
+		}
+	}
+
+	utils.SendJson(w, http.StatusUnauthorized, model.Response{
+		Success: false,
+		Message: "Invalid email or password",
+		Data:    nil,
+	})
+}
