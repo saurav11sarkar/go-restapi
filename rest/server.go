@@ -5,13 +5,15 @@ import (
 	"net/http"
 
 	"github.com/saurav11sarkar/resapi/config"
+	"github.com/saurav11sarkar/resapi/rest/hendler"
 	middlewares2 "github.com/saurav11sarkar/resapi/rest/middlewares"
 )
 
 func Start(cfg config.Config) {
 	mux := http.NewServeMux()
 
-	routes(mux)
+	hendler.ConfigureAuth(cfg.JWTSecret, cfg.JWTExpires)
+	routes(mux, cfg)
 
 	manager := middlewares2.NewManager()
 

@@ -4,10 +4,20 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/saurav11sarkar/resapi/internal/model"
 	"github.com/saurav11sarkar/resapi/utils"
+	"golang.org/x/crypto/bcrypt"
 )
+
+var jwtSecret string
+var jwtExpires time.Duration
+
+func ConfigureAuth(secret string, expires time.Duration) {
+	jwtSecret = secret
+	jwtExpires = expires
+}
 
 func PostUser(w http.ResponseWriter, r *http.Request) {
 	var body model.User
@@ -19,6 +29,29 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
+
+	for _, user := range users {
+		if user.Email == body.Email {
+			utils.SendJson(w, http.StatusConflict, model.Response{
+				Success: false,
+				Message: "Email already exists",
+				Data:    nil,
+			})
+			return
+		}
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+	if err != nil {
+		utils.SendJson(w, http.StatusInternalServerError, model.Response{
+			Success: false,
+			Message: "Could not create user",
+			Data:    nil,
+		})
+		return
+	}
+	body.Password = string(hashedPassword)
+
 	body.Id = nextId
 	nextId++
 	users = append(users, body)
@@ -26,7 +59,7 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 	utils.SendJson(w, http.StatusCreated, model.Response{
 		Success: true,
 		Message: "User create success",
-		Data:    body,
+		Data:    model.ToPublicUser(body),
 	})
 }
 
@@ -34,7 +67,7 @@ func GetAllUsers(w http.ResponseWriter, r *http.Request) {
 	utils.SendJson(w, http.StatusOK, model.Response{
 		Success: true,
 		Message: "User get success",
-		Data:    users,
+		Data:    model.ToPublicUsers(users),
 	})
 }
 
@@ -54,7 +87,7 @@ func GetUserById(w http.ResponseWriter, r *http.Request) {
 			utils.SendJson(w, http.StatusOK, model.Response{
 				Success: true,
 				Message: "User get success",
-				Data:    user,
+				Data:    model.ToPublicUser(user),
 			})
 			return
 		}
@@ -90,12 +123,26 @@ func UpdateUserById(w http.ResponseWriter, r *http.Request) {
 
 	for i, user := range users {
 		if user.Id == id {
+			if body.Password == "" {
+				body.Password = user.Password
+			} else {
+				hashedPassword, err := bcrypt.GenerateFromPassword([]byte(body.Password), bcrypt.DefaultCost)
+				if err != nil {
+					utils.SendJson(w, http.StatusInternalServerError, model.Response{
+						Success: false,
+						Message: "Could not update user",
+						Data:    nil,
+					})
+					return
+				}
+				body.Password = string(hashedPassword)
+			}
 			body.Id = id
 			users[i] = body
 			utils.SendJson(w, http.StatusOK, model.Response{
 				Success: true,
 				Message: "User update success",
-				Data:    users[i],
+				Data:    model.ToPublicUser(users[i]),
 			})
 			return
 		}
@@ -159,11 +206,26 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, user := range users {
-		if user.Email == body.Email && user.Password == body.Password {
+		if user.Email == body.Email && bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password)) == nil {
+			token, err := utils.GenerateToken(user.Id, user.Email, jwtSecret, jwtExpires)
+			if err != nil {
+				utils.SendJson(w, http.StatusInternalServerError, model.Response{
+					Success: false,
+					Message: "Could not create access token",
+					Data:    nil,
+				})
+				return
+			}
+
 			utils.SendJson(w, http.StatusOK, model.Response{
 				Success: true,
 				Message: "User login success",
-				Data:    user,
+				Data: model.LoginResponse{
+					AccessToken: token,
+					TokenType:   "Bearer",
+					ExpiresIn:   int64(jwtExpires.Seconds()),
+					User:        model.ToPublicUser(user),
+				},
 			})
 			return
 		}
