@@ -1,9 +1,9 @@
 package main
 
 import (
-	"github.com/saurav11sarkar/resapi/rest"
+	"github.com/saurav11sarkar/resapi/cmd"
 )
 
 func main() {
-	rest.Serve()
+	cmd.Serve()
 }
