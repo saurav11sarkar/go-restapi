@@ -13,7 +13,7 @@ func Start(cfg config.Config) {
 	mux := http.NewServeMux()
 
 	hendler.ConfigureAuth(cfg.JWTSecret, cfg.JWTExpires)
-	routes(mux, cfg)
+	routes(mux)
 
 	manager := middlewares2.NewManager()
 

@@ -12,6 +12,7 @@ type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 	Age      int    `json:"age"`
+	Role     string `json:"role"`
 }
 
 type PublicUser struct {
@@ -19,6 +20,7 @@ type PublicUser struct {
 	Name  string `json:"name"`
 	Email string `json:"email"`
 	Age   int    `json:"age"`
+	Role  string `json:"role"`
 }
 
 type LoginResponse struct {
@@ -48,6 +50,7 @@ func ToPublicUser(user User) PublicUser {
 		Name:  user.Name,
 		Email: user.Email,
 		Age:   user.Age,
+		Role:  user.Role,
 	}
 }
 

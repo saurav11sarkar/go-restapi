@@ -11,15 +11,17 @@ import (
 type JwtClaims struct {
 	UserID int    `json:"userId"`
 	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.RegisteredClaims
 }
 
-func GenerateToken(userID int, email string, secret string, expiresIn time.Duration) (string, error) {
+func GenerateToken(userID int, email string, role string, secret string, expiresIn time.Duration) (string, error) {
 	now := time.Now().UTC()
 
 	claims := JwtClaims{
 		UserID: userID,
 		Email:  email,
+		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   strconv.Itoa(userID),
 			IssuedAt:  jwt.NewNumericDate(now),

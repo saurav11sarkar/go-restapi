@@ -137,6 +137,7 @@ func UpdateUserById(w http.ResponseWriter, r *http.Request) {
 				}
 				body.Password = string(hashedPassword)
 			}
+			body.Role = user.Role
 			body.Id = id
 			users[i] = body
 			utils.SendJson(w, http.StatusOK, model.Response{
@@ -207,7 +208,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 
 	for _, user := range users {
 		if user.Email == body.Email && bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(body.Password)) == nil {
-			token, err := utils.GenerateToken(user.Id, user.Email, jwtSecret, jwtExpires)
+			token, err := utils.GenerateToken(user.Id, user.Email, user.Role, jwtSecret, jwtExpires)
 			if err != nil {
 				utils.SendJson(w, http.StatusInternalServerError, model.Response{
 					Success: false,
