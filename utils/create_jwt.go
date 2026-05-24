@@ -15,6 +15,10 @@ type JwtClaims struct {
 	jwt.RegisteredClaims
 }
 
+type contextKey string
+
+const ContextUserKey contextKey = "user"
+
 func GenerateToken(userID int, email string, role string, secret string, expiresIn time.Duration) (string, error) {
 	now := time.Now().UTC()
 

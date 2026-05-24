@@ -3,22 +3,28 @@ package rest
 import (
 	"net/http"
 
-	"github.com/saurav11sarkar/resapi/rest/hendler"
-	middlewares2 "github.com/saurav11sarkar/resapi/rest/middlewares"
+	"github.com/saurav11sarkar/resapi/config"
+	"github.com/saurav11sarkar/resapi/rest/hendler/auth"
+	"github.com/saurav11sarkar/resapi/rest/hendler/product"
+	"github.com/saurav11sarkar/resapi/rest/hendler/user"
 )
 
-func routes(mux *http.ServeMux) {
-	manager := middlewares2.NewManager()
-	testmiddlewares := manager.With(middlewares2.TestMiddleware)
+func routes(prefix string, mux *http.ServeMux, cfg *config.Config) {
+	mountRouter(mux, "/"+prefix+"/user", user.Routes(cfg))
+	mountRouter(mux, "/"+prefix+"/auth", auth.Routes(cfg))
+	mountRouter(mux, "/"+prefix+"/product", product.Routes(cfg))
+}
 
-	mux.Handle("GET /", testmiddlewares.Apply(http.HandlerFunc(hendler.HomeHandler)))
-	mux.HandleFunc("POST /user", hendler.PostUser)
-	mux.HandleFunc("GET /user", hendler.GetAllUsers)
-	mux.HandleFunc("GET /user/{id}", hendler.GetUserById)
-	mux.HandleFunc("PUT /user/{id}", hendler.UpdateUserById)
-	mux.HandleFunc("DELETE /user/{id}", hendler.DeleteUserById)
-	mux.HandleFunc("POST /product", hendler.CreateProduct)
-	mux.HandleFunc("GET /product", hendler.GetAllProducts)
-	mux.HandleFunc("GET /product/{id}", hendler.GetProductById)
-	mux.HandleFunc("POST /login", hendler.LoginUser)
+func mountRouter(mux *http.ServeMux, path string, router http.Handler) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.StripPrefix(path, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "" {
+				r.URL.Path = "/"
+			}
+			router.ServeHTTP(w, r)
+		})).ServeHTTP(w, r)
+	})
+
+	mux.Handle(path, handler)
+	mux.Handle(path+"/", handler)
 }
